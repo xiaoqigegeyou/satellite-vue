@@ -1,0 +1,241 @@
+<template>
+  <div class="login_page">
+    <transition name="form-fade" mode="in-out">
+      <section class="form_contianer">
+        <div class="titleArea rflex">
+          <img class="logo" :src="logo" alt="Hadoop监控系统" />
+          <span class="title"><i>遥感影像处理过程数据分析及可视化系统</i></span>
+        </div>
+        <el-form
+          :model="loginForm"
+          :rules="rules"
+          ref="loginForm"
+          class="loginForm"
+        >
+          <el-form-item prop="username" class="login-item">
+            <span class="loginTips"><icon-svg icon-class="iconuser" /></span>
+            <el-input
+              @keyup.enter.native="submitForm('loginForm')"
+              class="area"
+              type="text"
+              placeholder="用户名"
+              v-model="loginForm.username"
+            ></el-input>
+          </el-form-item>
+          <el-form-item prop="password" class="login-item">
+            <span class="loginTips"><icon-svg icon-class="iconLock" /></span>
+            <el-input
+              @keyup.enter.native="submitForm('loginForm')"
+              class="area"
+              type="password"
+              placeholder="密码"
+              v-model="loginForm.password"
+            ></el-input>
+          </el-form-item>
+          <el-link type="primary" href="/#/regist">立即注册</el-link>
+          <br />
+          <br />
+          <el-form-item>
+            <el-button
+              type="primary"
+              @click="submitForm('loginForm')"
+              class="submit_btn"
+              >SIGN IN</el-button
+            >
+          </el-form-item>
+        </el-form>
+      </section>
+    </transition>
+  </div>
+</template>
+
+<script>
+import logoImg from "@/assets/img/satellite.png";
+import { login } from "@/api/user";
+import { setToken, getToken } from "@/utils/auth";
+
+export default {
+  data() {
+    return {
+      logo: logoImg,
+      loginForm: {
+        username: "admin",
+        password: "123456",
+      },
+      rules: {
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
+          { min: 2, max: 8, message: "长度在 2 到 8 个字符", trigger: "blur" },
+        ],
+        password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+      },
+    };
+  },
+  mounted() {},
+  methods: {
+    loginByWechat() {},
+    showMessage(type, message) {
+      this.$message({
+        type: type,
+        message: message,
+      });
+    },
+    submitForm(loginForm) {
+      this.$refs[loginForm].validate(async (valid) => {
+        if (valid) {
+          //登录逻辑
+          let userinfo = this.loginForm;
+          const result = await this.$http.post("User/login", userinfo);
+          //请求状态出错
+          if (result.status !== 200) {
+            this.$message.error("登录失败！请检查网络");
+            return;
+          }
+          //用户名或者密码错误
+          if (result.data == null || result.data.length === 0) {
+            this.$message.error("用户名或密码错误！");
+            return;
+          }
+          //登录成功 设置用户角色为admin 跳转到首页 展开左侧菜单 提示用户登录成功
+          if (result.data.length > 0) {
+            if (result.data[0].userName === "admin") {
+              setToken("Token", "admin");
+            } else{
+				setToken("Token", "editor");
+			}
+
+            this.$router.push({ path: "/" });
+            this.$store.dispatch("initLeftMenu"); //设置左边菜单始终为展开状态
+            this.showMessage("success", "登录成功！");
+          }
+
+          /* login(userinfo).then(res => {
+							let userList = res.data.userList;
+							console.log(userList);
+							setToken("Token",userList.token)
+							this.$router.push({ path: '/' })
+							this.$store.dispatch('initLeftMenu'); //设置左边菜单始终为展开状态
+						}) */
+        }
+      });
+    },
+  },
+};
+</script>
+
+<style lang="less" scoped>
+.login_page {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url(../assets/img/bg9.jpg) no-repeat center center;
+  background-size: 100% 100%;
+}
+.form_contianer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  width: 370px;
+  border-radius: 5px;
+  padding: 25px;
+  text-align: center;
+  .titleArea {
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    font-size: 22px;
+    width: 100%;
+    padding-bottom: 20px;
+    .logo {
+      width: 40px;
+      margin-right: 10px;
+    }
+    .title {
+      i {
+        color: #ff6c60;
+      }
+    }
+  }
+
+  .loginForm {
+    .submit_btn {
+      width: 100%;
+      padding: 13px 0;
+      font-size: 16px;
+    }
+    .loginTips {
+      position: absolute;
+      left: 10px;
+      z-index: 20;
+      // color: #FF7C1A;
+      font-size: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+}
+
+.manage_tip {
+  margin-bottom: 20px;
+  .title {
+    font-family: cursive;
+    font-weight: bold;
+    font-size: 26px;
+    color: #fff;
+  }
+  .logo {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+.tiparea {
+  text-align: left;
+  font-size: 12px;
+  color: #4cbb15;
+  padding: 10px 0;
+  .tip {
+    margin-left: 54px;
+  }
+}
+
+.form-fade-enter-active,
+.form-fade-leave-active {
+  transition: all 1s;
+}
+.form-fade-enter,
+.form-fade-leave-active {
+  transform: translate3d(0, -50px, 0);
+  opacity: 0;
+}
+.loginForm {
+  .el-button--primary {
+    background-color: #ff7c1a;
+    border: 1px solid #ff7c1a;
+  }
+}
+.sanFangArea {
+  border-top: 1px solid #dcdfe6;
+  padding: 10px 0;
+  display: none;
+  .title {
+    font-size: 14px;
+    color: #8b9196;
+    margin-bottom: 10px;
+  }
+  ul {
+    li {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      .svg-icon {
+        font-size: 24px;
+      }
+    }
+  }
+}
+</style>
